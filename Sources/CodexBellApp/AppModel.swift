@@ -69,6 +69,12 @@ final class AppModel: ObservableObject {
         }.store(in: &cancellables)
 
         liveBridge.onSourcedEvent = { [weak self] event in self?.consume(event) }
+        liveBridge.onExcludedSubagentTurn = { [weak self] turnID in
+            guard let self, self.reconciler.excludeSubagentTurn(turnID) else { return }
+            self.refreshPublishedTasks()
+            self.syncPowerAssertion()
+            self.persist()
+        }
         liveBridge.onHealthChanged = { [weak self] health in
             self?.integrationHealth = health
             self?.persist()
@@ -257,6 +263,10 @@ final class AppModel: ObservableObject {
         isPumping = true
         defer { isPumping = false }
         while let item = await queue.next() {
+            if AnnouncementPolicy.isSuperseded(item, by: reconciler.task(turnID: item.turnID)) {
+                await queue.markFinished()
+                continue
+            }
             let currentLanguage = language
             await notifier.post(item, language: currentLanguage)
             await audio.announce(item, volume: item.volumeOverride ?? settings.volume, language: currentLanguage)

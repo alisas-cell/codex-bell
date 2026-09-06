@@ -24,7 +24,7 @@ public struct ActiveTaskPresentation: Sendable, Equatable {
 
 public enum TaskPresentationPolicy {
     public static let collapsedActiveLimit = 4
-    public static let recentVisibleLimit = 5
+    public static let recentVisibleLimit = 3
 
     public static func active(_ tasks: [TrackedTask], expanded: Bool) -> ActiveTaskPresentation {
         let ordered = tasks

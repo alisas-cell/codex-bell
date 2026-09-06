@@ -20,6 +20,7 @@ final class SessionLogEventSource {
     private var states: [URL: FileState] = [:]
     private var timer: Timer?
     private var handler: ((CodexEvent, Bool) -> Void)?
+    private var excludedTurnHandler: ((String) -> Void)?
     private var availabilityHandler: ((Bool) -> Void)?
 
     init(codexHome: URL) {
@@ -28,9 +29,11 @@ final class SessionLogEventSource {
 
     func start(
         handler: @escaping (CodexEvent, Bool) -> Void,
+        excludedTurn: @escaping (String) -> Void,
         availabilityChanged: @escaping (Bool) -> Void
     ) {
         self.handler = handler
+        excludedTurnHandler = excludedTurn
         availabilityHandler = availabilityChanged
         let initialFiles = recentSessionFiles()
         availabilityChanged(!initialFiles.isEmpty)
@@ -111,8 +114,8 @@ final class SessionLogEventSource {
             }
             guard let event = try? CodexSessionEventDecoder.decode(
                 data,
-                sessionID: state.context.sessionID,
-                identity: state.context.identity
+                context: state.context,
+                excludedTurn: excludedTurnHandler
             ) else { continue }
             let historical = isBackfill && event.occurredAt < sourceStartedAt.addingTimeInterval(-1)
             handler?(event, historical)
@@ -125,7 +128,8 @@ final class SessionLogEventSource {
     }
 
     private func mightContainSupportedRecord(_ data: Data) -> Bool {
-        let needles = ["session_meta", "task_started", "task_complete", "turn_aborted"]
+        let needles = ["session_meta", "task_started", "task_complete", "turn_aborted",
+                       "stream_error", "\"type\":\"error\"", "\"type\": \"error\""]
         return needles.contains { data.range(of: Data($0.utf8)) != nil }
     }
 }

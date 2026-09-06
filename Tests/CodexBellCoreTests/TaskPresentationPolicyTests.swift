@@ -54,7 +54,7 @@ final class TaskPresentationPolicyTests: XCTestCase {
         XCTAssertEqual(presentation.orderedTasks.map(\.turnID), (0..<5).map { "running-\($0)" })
     }
 
-    func testRecentShowsOnlyFiveNewestTerminalTasks() {
+    func testRecentShowsOnlyThreeNewestTerminalTasks() {
         let tasks = (0..<12).map { index in
             task(
                 id: "recent-\(index)",
@@ -64,8 +64,8 @@ final class TaskPresentationPolicyTests: XCTestCase {
             )
         }
         let visible = TaskPresentationPolicy.recent(tasks.shuffled())
-        XCTAssertEqual(visible.count, 5)
-        XCTAssertEqual(visible.map(\.turnID), ["recent-11", "recent-10", "recent-9", "recent-8", "recent-7"])
+        XCTAssertEqual(visible.count, 3)
+        XCTAssertEqual(visible.map(\.turnID), ["recent-11", "recent-10", "recent-9"])
     }
 
     private func makeRunningTasks(_ count: Int) -> [TrackedTask] {

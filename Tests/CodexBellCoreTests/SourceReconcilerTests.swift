@@ -85,4 +85,24 @@ final class SourceReconcilerTests: XCTestCase {
         XCTAssertEqual(completed?.announcementKind, .completed)
         XCTAssertEqual(reconciler.allTasks.count, 1)
     }
+
+    func testExcludingRestoredChildRowsPreservesParentAndBlocksLaterSources() throws {
+        var old = SourceReconciler()
+        _ = old.apply(sourced(.userPromptSubmit, source: .codexSessions, turn: "parent", at: 1))
+        _ = old.apply(sourced(.userPromptSubmit, source: .codexSessions, turn: "child-running", at: 2))
+        _ = old.apply(sourced(.stop, source: .codexSessions, turn: "child-completed", at: 3))
+        // The real persistence format drops session IDs. Cleanup must use turn IDs.
+        let snapshot = PersistedSnapshot.make(settings: .default, tasks: old.allTasks)
+        let restored = try PersistenceCodec.decode(PersistenceCodec.encode(snapshot))
+        var reconciler = SourceReconciler(restoring: restored.tasks.map(\.trackedTask), source: .codexSessions)
+
+        XCTAssertTrue(reconciler.excludeSubagentTurn("child-running"))
+        XCTAssertTrue(reconciler.excludeSubagentTurn("child-completed"))
+        XCTAssertFalse(reconciler.excludeSubagentTurn("child-completed"))
+        XCTAssertNil(reconciler.apply(sourced(.stop, source: .hooks, turn: "child-running", at: 4)))
+        XCTAssertNil(reconciler.apply(sourced(.stop, source: .codexSessions, turn: "child-completed", at: 5)))
+        XCTAssertEqual(reconciler.allTasks.map(\.turnID), ["parent"])
+        XCTAssertEqual(reconciler.activeTasks.count, 1)
+        XCTAssertEqual(reconciler.apply(sourced(.stop, source: .codexSessions, turn: "parent", at: 6))?.announcementKind, .completed)
+    }
 }

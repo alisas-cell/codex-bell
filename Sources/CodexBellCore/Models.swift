@@ -35,6 +35,8 @@ public enum CodexEventKind: String, Codable, Sendable, Equatable {
     case interrupt
     case agentTurnComplete
     case turnFailed
+    case turnRetrying
+    case turnUnknownFinished
     case waitingInput
 }
 

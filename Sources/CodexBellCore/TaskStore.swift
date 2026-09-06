@@ -45,6 +45,13 @@ public struct TaskStore: Sendable {
 
     public func task(turnID: String) -> TrackedTask? { tasksByID[turnID] }
 
+    @discardableResult
+    public mutating func removeTask(turnID: String) -> Bool {
+        guard tasksByID.removeValue(forKey: turnID) != nil else { return false }
+        order.removeAll { $0 == turnID }
+        return true
+    }
+
     public mutating func clearTerminalHistory() {
         let terminalIDs = Set(order.filter { id in
             guard let task = tasksByID[id] else { return false }
@@ -62,11 +69,7 @@ public struct TaskStore: Sendable {
     ) -> TaskTransition? {
         let now = timestamp ?? event.occurredAt
         if let existing = tasksByID[event.turnID], isTerminal(existing.state) {
-            if event.kind == .stop || event.kind == .agentTurnComplete || event.kind == .interrupt || event.kind == .turnFailed {
-                guard allowTerminalCorrection else { return nil }
-            } else {
-                return nil
-            }
+            guard allowTerminalCorrection else { return nil }
         }
 
         var task: TrackedTask
@@ -117,7 +120,7 @@ public struct TaskStore: Sendable {
         case .waitingInput:
             targetState = .waitingInput
             announcement = previous == .waitingInput ? nil : .waitingInput
-        case .preToolUse, .postToolUse:
+        case .preToolUse, .postToolUse, .turnRetrying:
             targetState = .running
             announcement = nil
         case .stop, .agentTurnComplete:
@@ -129,6 +132,9 @@ public struct TaskStore: Sendable {
         case .turnFailed:
             targetState = .failed
             announcement = .failed
+        case .turnUnknownFinished:
+            targetState = .unknownFinished
+            announcement = nil
         }
 
         if previous == targetState && event.kind != .userPromptSubmit {

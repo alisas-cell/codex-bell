@@ -109,8 +109,11 @@ public enum PersistenceCodec {
 public extension CodexEvent {
     func redactedForInbox() -> CodexEvent {
         var copy = self
-        if (kind == .stop || kind == .agentTurnComplete), TerminalOutcomeClassifier.classify(lastAssistantMessage) == .failed {
-            copy.kind = .turnFailed
+        // Raw hooks classify missing output at decode time. Already-redacted
+        // authoritative completion events have no message and retain their kind.
+        if (kind == .stop || kind == .agentTurnComplete), let lastAssistantMessage {
+            let outcome = TerminalOutcomeClassifier.classify(lastAssistantMessage)
+            if outcome != .completed { copy.kind = outcome.eventKind }
         }
         copy.identity = identity ?? TaskNameExtractor.extract(cwd: cwd, prompt: prompt)
         copy.cwd = nil

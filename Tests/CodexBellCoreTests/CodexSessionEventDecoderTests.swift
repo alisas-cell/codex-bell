@@ -48,5 +48,68 @@ final class CodexSessionEventDecoderTests: XCTestCase {
         XCTAssertEqual(context.sessionID, "session-1")
         XCTAssertEqual(context.identity.projectName, "Codex Bell")
         XCTAssertNil(context.identity.taskName)
+        XCTAssertFalse(context.isSubagent)
+    }
+
+    func testRecognizesInternalAgentMetadataWithoutDependingOnProjectName() throws {
+        let markers = [
+            #""source":{"subagent":{"other":"guardian"}}"#,
+            #""source":{"subagent":{"thread_spawn":{"parent_thread_id":"parent"}}}"#,
+            #""source":{"subagent":"review"}"#,
+            #""parent_thread_id":"parent""#,
+            #""thread_source":"guardian_review""#
+        ]
+        for marker in markers {
+            let line = #"{"type":"session_meta","payload":{"id":"child","cwd":"/Volumes/Demo/sample-app",\#(marker)}}"#
+            let context = try XCTUnwrap(CodexSessionEventDecoder.decodeContext(Data(line.utf8)))
+            XCTAssertTrue(context.isSubagent, marker)
+        }
+    }
+
+    func testUserSessionsIncludingForksRemainEligible() throws {
+        for source in ["vscode", "cli", "exec"] {
+            let line = #"{"type":"session_meta","payload":{"id":"root","cwd":"/Volumes/Demo/sample-app","source":"\#(source)","thread_source":"user","parent_thread_id":null,"forked_from_id":"older-thread"}}"#
+            let context = try XCTUnwrap(CodexSessionEventDecoder.decodeContext(Data(line.utf8)))
+            XCTAssertFalse(context.isSubagent)
+        }
+    }
+
+    func testRepeatedChildCompletionsStaySilentWhileParentCompletesExactlyOnce() throws {
+        let rootMeta = #"{"type":"session_meta","payload":{"id":"root","cwd":"/Volumes/Demo/sample-app","source":"vscode","thread_source":"user"}}"#
+        let childMeta = #"{"type":"session_meta","payload":{"id":"child","cwd":"/Volumes/Demo/sample-app","source":{"subagent":{"other":"guardian"}},"parent_thread_id":"root","thread_source":"guardian_review"}}"#
+        let root = try XCTUnwrap(CodexSessionEventDecoder.decodeContext(Data(rootMeta.utf8)))
+        let child = try XCTUnwrap(CodexSessionEventDecoder.decodeContext(Data(childMeta.utf8)))
+        var reconciler = SourceReconciler()
+        var announcements: [AnnouncementKind] = []
+        var excluded: [String] = []
+
+        func feed(_ type: String, turn: String, context: CodexSessionContext) throws {
+            let line = #"{"type":"event_msg","payload":{"type":"\#(type)","turn_id":"\#(turn)","started_at":100,"completed_at":120,"last_agent_message":"Done."}}"#
+            guard let event = try CodexSessionEventDecoder.decode(
+                Data(line.utf8), context: context, excludedTurn: { excluded.append($0) }
+            ) else { return }
+            let transition = reconciler.apply(SourcedCodexEvent(
+                source: .codexSessions, event: event, confidence: .authoritative
+            ))
+            if let kind = transition?.announcementKind { announcements.append(kind) }
+        }
+
+        try feed("task_started", turn: "parent-turn", context: root)
+        for index in 1...5 {
+            try feed("task_started", turn: "child-\(index)", context: child)
+            try feed("task_complete", turn: "child-\(index)", context: child)
+        }
+        try feed("turn_aborted", turn: "child-aborted", context: child)
+        XCTAssertEqual(Set(excluded).count, 6)
+        XCTAssertTrue(announcements.isEmpty)
+        XCTAssertEqual(reconciler.allTasks.count, 1)
+        XCTAssertEqual(reconciler.activeTasks.first?.turnID, "parent-turn")
+        XCTAssertTrue(reconciler.recentTasks.isEmpty)
+
+        try feed("task_complete", turn: "parent-turn", context: root)
+        try feed("task_complete", turn: "parent-turn", context: root)
+        XCTAssertEqual(announcements, [.completed])
+        XCTAssertTrue(reconciler.activeTasks.isEmpty)
+        XCTAssertEqual(reconciler.recentTasks.count, 1)
     }
 }

@@ -24,7 +24,11 @@ public enum HookPayloadDecoder {
             if ["request_user_input", "request_user_input_async"].contains(object["tool_name"] as? String) { kind = .waitingInput }
             else { kind = .preToolUse }
         case "PostToolUse": kind = .postToolUse
-        case "Stop": kind = .stop
+        case "Stop": kind = TerminalOutcomeClassifier.classify(
+            object["last_assistant_message"] as? String,
+            hasError: object["error"].map { !($0 is NSNull) } == true,
+            isRetrying: object["will_retry"] as? Bool == true || object["willRetry"] as? Bool == true
+        ).eventKind
         case "Interrupt": kind = .interrupt
         default: throw HookPayloadDecoderError.unknownHook(name)
         }
@@ -49,8 +53,13 @@ public enum HookPayloadDecoder {
             throw HookPayloadDecoderError.invalidLegacyNotify
         }
         let messages = object["input-messages"] as? [String]
+        let outcome = TerminalOutcomeClassifier.classify(
+            object["last-assistant-message"] as? String,
+            hasError: object["error"].map { !($0 is NSNull) } == true,
+            isRetrying: object["will_retry"] as? Bool == true || object["willRetry"] as? Bool == true
+        )
         return CodexEvent(
-            kind: .agentTurnComplete,
+            kind: outcome == .completed ? .agentTurnComplete : outcome.eventKind,
             turnID: turnID,
             sessionID: object["thread-id"] as? String,
             cwd: object["cwd"] as? String,

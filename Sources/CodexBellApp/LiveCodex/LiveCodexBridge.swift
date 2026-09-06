@@ -11,6 +11,7 @@ final class LiveCodexBridge {
 
     private(set) var evidence: IntegrationEvidence
     var onSourcedEvent: ((SourcedCodexEvent) -> Void)?
+    var onExcludedSubagentTurn: ((String) -> Void)?
     var onHealthChanged: ((IntegrationHealth) -> Void)?
 
     init(appSupportDirectory: URL, inboxDirectory: URL, initialEvidence: IntegrationEvidence?) {
@@ -71,6 +72,8 @@ final class LiveCodexBridge {
                     isBackfill: isBackfill
                 )
             )
+        } excludedTurn: { [weak self] turnID in
+            self?.onExcludedSubagentTurn?(turnID)
         } availabilityChanged: { [weak self] available in
             guard let self else { return }
             self.evidence.sessionLogDetected = available
