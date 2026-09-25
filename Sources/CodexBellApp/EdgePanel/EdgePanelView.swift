@@ -131,14 +131,14 @@ struct EdgePanelView: View {
                 if isActiveExpanded {
                     ScrollView(.vertical) {
                         VStack(spacing: 2) {
-                            ForEach(active.visibleTasks) { BellTaskRow(task: $0, copy: copy) }
+                            ForEach(active.visibleTasks) { activeTaskRow($0) }
                         }
                     }
                     .frame(maxHeight: 260)
                     .scrollIndicators(.automatic)
                 } else {
                     VStack(spacing: 2) {
-                        ForEach(active.visibleTasks) { BellTaskRow(task: $0, copy: copy) }
+                        ForEach(active.visibleTasks) { activeTaskRow($0) }
                     }
                 }
                 if active.isDisclosureNeeded {
@@ -172,6 +172,12 @@ struct EdgePanelView: View {
         Text(text)
             .font(.system(size: BellTypography.sectionHeader, weight: .semibold))
             .foregroundStyle(.tertiary)
+    }
+
+    private func activeTaskRow(_ task: TrackedTask) -> some View {
+        BellTaskRow(task: task, copy: copy) {
+            interact(.control) { model.dismissActiveTask(turnID: task.turnID) }
+        }
     }
 
     private var controls: some View {
@@ -350,8 +356,18 @@ struct EdgeHandleView: View {
 struct BellTaskRow: View {
     let task: TrackedTask
     let copy: LocalizedCopy
+    var onDismiss: (() -> Void)? = nil
+    @State private var isHovered = false
 
-    var body: some View {
+    @ViewBuilder var body: some View {
+        if let onDismiss {
+            row.accessibilityAction(named: Text(copy[.dismissTask]), onDismiss)
+        } else {
+            row
+        }
+    }
+
+    private var row: some View {
         HStack(spacing: 9) {
             Circle().fill(statusColor).frame(width: 7, height: 7)
             VStack(alignment: .leading, spacing: 1) {
@@ -377,8 +393,26 @@ struct BellTaskRow: View {
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(statusColor)
             }
+            if let onDismiss {
+                Button(action: onDismiss) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 22, height: 22)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help(copy[.dismissTaskHelp])
+                .accessibilityLabel(copy[.dismissTask])
+                .opacity(isHovered ? 1 : 0)
+                .disabled(!isHovered)
+                .allowsHitTesting(isHovered)
+                .accessibilityHidden(!isHovered)
+            }
         }
         .padding(.vertical, 5)
+        .contentShape(Rectangle())
+        .onHover { isHovered = $0 }
     }
 
     private var statusColor: Color {

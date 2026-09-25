@@ -2,6 +2,22 @@
 
 All notable public changes to Codex Bell will be documented here.
 
+## [1.0.2] - 2026-09-25
+
+### 中文
+
+- 正在运行的任务行新增仅在鼠标悬停时显示的小 ×，支持从 Bell 手动移除单条运行中或等待处理的记录。
+- 移除只停止 Bell 的跟踪和提醒，不取消实际 Codex 任务、不误记为完成，也不影响同一项目的新任务。
+- 记住已移除的任务 ID，防止同步、历史回放或重启后重新出现；跳过该条任务尚未播放的排队提醒。
+- 保留旧状态文件兼容性、中英文提示和无障碍移除操作；主面板展开列表与菜单栏共用相同交互。
+
+### English
+
+- Add a hover-only × to active task rows, allowing individual running or waiting records to be dismissed from Bell.
+- Dismissal stops Bell tracking and alerts without cancelling Codex work, marking success, or hiding new turns in the same project.
+- Persist dismissed turn IDs to prevent revival after sync, replay, or restart, and skip their pending announcements.
+- Preserve old saved-state compatibility, bilingual help, and an accessibility dismissal action; use the same interaction in expanded Active and menu-bar rows.
+
 ## [1.0.1] - 2026-09-06
 
 ### 中文

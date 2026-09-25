@@ -5,6 +5,7 @@ public struct LocalizedCopy: Sendable, Equatable {
         case general, dock, audio, integration, privacy, about
         case settings, language, active, waiting, recent, connectionStatus
         case noActivity, completionAlerts, volume
+        case dismissTask, dismissTaskHelp
         case connect, testAnnouncement, pin, unpin, collapseToEdge, reveal, quit, ready, running
         case failed, completed, interrupted, previousSession, waitingApproval, waitingInput
         case launchAtLogin, showInDock, keepAwakeDetail, sleepNote, history, storedRecentTasks, clearHistory
@@ -203,6 +204,7 @@ public struct LocalizedCopy: Sendable, Equatable {
         .general: "General", .dock: "Dock", .audio: "Audio", .integration: "Integration", .privacy: "Privacy", .about: "About",
         .settings: "Settings", .language: "Language", .active: "Active", .waiting: "Waiting", .recent: "Recent", .connectionStatus: "Connection Status",
         .noActivity: "No Codex activity yet", .completionAlerts: "Enable Voice Announcements", .volume: "Announcement Volume",
+        .dismissTask: "Dismiss from Bell", .dismissTaskHelp: "Stop tracking this task in Bell. The Codex task will keep running.",
         .connect: "Connect", .testAnnouncement: "Test Announcement",
         .pin: "Pin Panel", .unpin: "Unpin Panel", .collapseToEdge: "Collapse to Edge", .reveal: "Reveal Codex Bell", .quit: "Quit Codex Bell",
         .ready: "Ready", .running: "Running", .failed: "Failed", .completed: "Completed", .interrupted: "Interrupted",
@@ -239,6 +241,7 @@ public struct LocalizedCopy: Sendable, Equatable {
         .general: "通用", .dock: "停靠", .audio: "音频", .integration: "连接", .privacy: "隐私", .about: "关于",
         .settings: "设置", .language: "语言", .active: "正在运行", .waiting: "等待你", .recent: "最近完成", .connectionStatus: "连接状态",
         .noActivity: "暂无 Codex 活动", .completionAlerts: "开启语音播报", .volume: "播报音量",
+        .dismissTask: "从 Bell 移除", .dismissTaskHelp: "停止 Bell 对此任务的跟踪与提醒，不会终止 Codex 中的任务。",
         .connect: "连接", .testAnnouncement: "测试播报",
         .pin: "固定", .unpin: "取消固定", .collapseToEdge: "收起到边缘", .reveal: "显示 Codex 叮铃铃", .quit: "退出 Codex 叮铃铃",
         .ready: "准备就绪", .running: "正在运行", .failed: "失败", .completed: "已完成", .interrupted: "已中断",

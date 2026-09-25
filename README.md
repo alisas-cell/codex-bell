@@ -17,13 +17,13 @@
 
 # 中文
 
-## v1.0.1 更新 · 2026-09-06
+## v1.0.2 更新 · 2026-09-25
 
-- **减少错误的完成提醒：** 内部子代理结束不再被当作主任务完成；服务过载、额度不足等错误结束会标记为失败。
-- **重试和未知结果更清楚：** 明确正在重连或重试时继续保持运行；无法确认成功的空结果显示「结果未确认」，不播报完成。读取到的历史误判会安静纠正，已过期的排队提醒会跳过。
-- **面板更紧凑：**「最近完成」最多显示最新 3 条，较早的脱敏历史仍保留在内部。
+- **手动清理卡住的记录：** 鼠标移到正在运行的任务行，右侧才会显示小 ×；点击后停止 Bell 对这一条任务的跟踪与提醒。
+- **不会终止 Codex 任务：** 移除只影响 Bell；同一项目之后启动的新任务仍正常显示。已移除的记录不会因同步或重启重新出现。
+- **延续已有修复：** 保留错误、重连和空结果的准确分类，以及最近完成最多显示 3 条。
 
-[下载 v1.0.1（Apple silicon）](https://github.com/alisas-cell/codex-bell/releases/download/v1.0.1/Codex-Bell-macOS-v1.0.1.zip) · [完整更新说明](https://github.com/alisas-cell/codex-bell/releases/tag/v1.0.1)
+[下载 v1.0.2（Apple silicon）](https://github.com/alisas-cell/codex-bell/releases/download/v1.0.2/Codex-Bell-macOS-v1.0.2.zip) · [完整更新说明](https://github.com/alisas-cell/codex-bell/releases/tag/v1.0.2)
 
 ## Codex Bell 是什么？
 
@@ -76,6 +76,8 @@ Codex Bell 会追踪 Codex 的任务生命周期，并在可识别的状态变�
 - 普通 Running 任务按运行时间排序
 
 Recent 区域只显示最近 3 条终态记录，让 280pt 的窄面板不会越用越长。
+
+鼠标悬停在 Active 任务行上时，右侧会出现 **×**。点击可以移除卡住或暂时不想关注的记录，并停止该条任务后续的 Bell 提醒。它不会终止 Codex 中的任务，也不会把它标记为已完成；同一项目的新任务不受影响。已移除记录不会因重启恢复，目前没有恢复该记录的按钮。
 
 ### ↔️ 左右停靠
 
@@ -172,7 +174,7 @@ Bell 自己保存的是经过限制和脱敏的任务状态信息与应用设置
 6. 根据首次启动引导完成 Codex 集成检查
 7. 启动一个 Codex 任务进行测试
 
-> **v1.0.1 未经过 Apple 公证。** 当前二进制采用 hardened runtime 的本地 ad-hoc 签名，不是 Apple Developer ID 签名。macOS 可能会阻止首次启动；请先尝试按住 Control 点击应用并选择「打开」，或到「系统设置 → 隐私与安全性」确认「仍要打开」。不要关闭 Gatekeeper，也不要执行来源不明的 `xattr` 命令。你也可以从本仓库源码自行构建。
+> **v1.0.2 未经过 Apple 公证。** 当前二进制采用 hardened runtime 的本地 ad-hoc 签名，不是 Apple Developer ID 签名。macOS 可能会阻止首次启动；请先尝试按住 Control 点击应用并选择「打开」，或到「系统设置 → 隐私与安全性」确认「仍要打开」。不要关闭 Gatekeeper，也不要执行来源不明的 `xattr` 命令。你也可以从本仓库源码自行构建。
 
 ### 方式二：从源码构建
 
@@ -190,7 +192,7 @@ swift build -c release
 ## 🖥️ 系统要求
 
 - **macOS：** 14 Sonoma 或更高版本
-- **架构：** Apple silicon（arm64）；v1.0.1 未提供 Intel 构建
+- **架构：** Apple silicon（arm64）；v1.0.2 未提供 Intel 构建
 - **已验证 Codex：** `codex-cli 0.153.0-alpha.5`
 - **构建验证环境：** macOS 15.3.2（arm64）
 - **签名：** hardened runtime + ad-hoc；**未使用 Apple Developer ID，未经过 Apple 公证**
@@ -295,13 +297,13 @@ MIT License。详见 [`LICENSE`](./LICENSE)。
 
 # English
 
-## v1.0.1 update · September 6, 2026
+## v1.0.2 update · September 25, 2026
 
-- **Fewer false completion alerts:** internal subagent turns no longer count as the main task finishing. Terminal errors, including capacity and usage-limit errors, are marked as failed.
-- **Clearer retries and uncertain outcomes:** explicit reconnect/retry states remain running. Empty outcomes without confirmation of success show “Result unconfirmed” without a completion announcement. Historical misclassifications are corrected silently when read, and superseded queued alerts are skipped.
-- **A more compact panel:** Recent now shows the latest three terminal tasks, while older redacted history remains stored internally.
+- **Clear stuck records yourself:** hover over an active task row to reveal a small ×. Click it to stop Bell tracking and announcing that turn.
+- **Codex keeps running:** dismissal only affects Bell. New turns in the same project still appear, while dismissed records stay hidden across sync and restarts.
+- **Previous fixes preserved:** errors, retries, and unconfirmed outcomes remain distinct from success; Recent still shows at most three tasks.
 
-[Download v1.0.1 for Apple silicon](https://github.com/alisas-cell/codex-bell/releases/download/v1.0.1/Codex-Bell-macOS-v1.0.1.zip) · [Full release notes](https://github.com/alisas-cell/codex-bell/releases/tag/v1.0.1)
+[Download v1.0.2 for Apple silicon](https://github.com/alisas-cell/codex-bell/releases/download/v1.0.2/Codex-Bell-macOS-v1.0.2.zip) · [Full release notes](https://github.com/alisas-cell/codex-bell/releases/tag/v1.0.2)
 
 ## What is Codex Bell?
 
@@ -354,6 +356,8 @@ When more are running:
 - normal Running tasks are ordered by elapsed time
 
 Recent shows only the three latest terminal tasks.
+
+Hover over an Active row to reveal **×**. Dismiss stuck or unwanted records and stop their subsequent Bell alerts without terminating the Codex task or marking it completed. New turns in the same project remain unaffected. Dismissed records stay hidden after restart; there is currently no restore button for them.
 
 ### ↔️ Left or right edge docking
 
@@ -437,7 +441,7 @@ Read more in:
 6. Follow the first-run integration check
 7. Start a Codex task to verify the connection
 
-> **v1.0.1 is NOT NOTARIZED.** Its binary has a local ad-hoc signature with hardened runtime, not an Apple Developer ID signature. macOS may block the first launch. First try Control-clicking the app and choosing **Open**, or use **System Settings → Privacy & Security → Open Anyway**. Do not disable Gatekeeper or run untrusted `xattr` commands. You can also build directly from this repository's source.
+> **v1.0.2 is NOT NOTARIZED.** Its binary has a local ad-hoc signature with hardened runtime, not an Apple Developer ID signature. macOS may block the first launch. First try Control-clicking the app and choosing **Open**, or use **System Settings → Privacy & Security → Open Anyway**. Do not disable Gatekeeper or run untrusted `xattr` commands. You can also build directly from this repository's source.
 
 ### Option 2: Build from source
 
@@ -455,7 +459,7 @@ See the repository build scripts for the final macOS app-bundle packaging flow.
 ## 🖥️ Requirements
 
 - **macOS:** 14 Sonoma or later
-- **Architecture:** Apple silicon (arm64); v1.0.1 does not include an Intel build
+- **Architecture:** Apple silicon (arm64); v1.0.2 does not include an Intel build
 - **Verified Codex:** `codex-cli 0.153.0-alpha.5`
 - **Build verification host:** macOS 15.3.2 (arm64)
 - **Signing:** hardened runtime + ad-hoc; **not Apple Developer ID signed and NOT NOTARIZED**

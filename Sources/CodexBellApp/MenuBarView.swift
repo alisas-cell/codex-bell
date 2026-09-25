@@ -27,7 +27,7 @@ struct MenuBarView: View {
             Divider()
 
             if let task = model.activeTasks.first {
-                BellTaskRow(task: task, copy: copy)
+                BellTaskRow(task: task, copy: copy) { model.dismissActiveTask(turnID: task.turnID) }
                     .padding(.horizontal, 14)
                     .padding(.vertical, 7)
                 Divider()

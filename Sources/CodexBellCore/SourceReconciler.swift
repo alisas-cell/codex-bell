@@ -18,13 +18,15 @@ public struct SourceReconciler: Sendable {
     private var store: TaskStore
     private var strongestSourceByTurn: [String: EventSource] = [:]
     private var excludedTurnIDs: Set<String> = []
+    public private(set) var dismissedTurnIDs: Set<String> = []
 
     public init(recentLimit: Int = 20) {
         store = TaskStore(recentLimit: recentLimit)
     }
 
-    public init(restoring tasks: [TrackedTask], source: EventSource, recentLimit: Int = 20) {
-        store = TaskStore(restoring: tasks, recentLimit: recentLimit)
+    public init(restoring tasks: [TrackedTask], source: EventSource, recentLimit: Int = 20, dismissedTurnIDs: Set<String> = []) {
+        self.dismissedTurnIDs = dismissedTurnIDs
+        store = TaskStore(restoring: tasks.filter { !dismissedTurnIDs.contains($0.turnID) }, recentLimit: recentLimit)
         strongestSourceByTurn = Dictionary(
             uniqueKeysWithValues: store.allTasks.map { ($0.turnID, source) }
         )
@@ -36,6 +38,16 @@ public struct SourceReconciler: Sendable {
 
     public func task(turnID: String) -> TrackedTask? {
         store.task(turnID: turnID)
+    }
+
+    /// Stop tracking this turn in Bell only. Keep a tombstone so source replay
+    /// cannot recreate it; a new turn in the same project is unaffected.
+    @discardableResult
+    public mutating func dismissActiveTask(turnID: String) -> Bool {
+        guard let task = store.task(turnID: turnID), !Self.isTerminal(task.state) else { return false }
+        dismissedTurnIDs.insert(turnID)
+        strongestSourceByTurn.removeValue(forKey: turnID)
+        return store.removeTask(turnID: turnID)
     }
 
     @discardableResult
@@ -58,7 +70,7 @@ public struct SourceReconciler: Sendable {
             guard let sessionID = event.sessionID, !sessionID.isEmpty else { return nil }
             event.turnID = "session:\(sessionID)"
         }
-        guard !excludedTurnIDs.contains(event.turnID) else { return nil }
+        guard !excludedTurnIDs.contains(event.turnID), !dismissedTurnIDs.contains(event.turnID) else { return nil }
 
         let currentSource = strongestSourceByTurn[event.turnID]
         if let currentSource, currentSource.precedence > sourced.source.precedence {

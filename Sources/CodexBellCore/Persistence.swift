@@ -49,32 +49,52 @@ public struct PersistedSnapshot: Codable, Sendable, Equatable {
     public var settings: BellSettings
     public var tasks: [PersistedTask]
     public var integrationEvidence: IntegrationEvidence?
+    public var dismissedTurnIDs: [String]
 
     public init(
         version: Int = 2,
         savedAt: Date = Date(),
         settings: BellSettings,
         tasks: [PersistedTask],
-        integrationEvidence: IntegrationEvidence? = nil
+        integrationEvidence: IntegrationEvidence? = nil,
+        dismissedTurnIDs: [String] = []
     ) {
         self.version = version
         self.savedAt = savedAt
         self.settings = settings
         self.tasks = tasks
         self.integrationEvidence = integrationEvidence
+        self.dismissedTurnIDs = dismissedTurnIDs
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case version, savedAt, settings, tasks, integrationEvidence, dismissedTurnIDs
+    }
+
+    public init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        version = try values.decode(Int.self, forKey: .version)
+        savedAt = try values.decode(Date.self, forKey: .savedAt)
+        settings = try values.decode(BellSettings.self, forKey: .settings)
+        tasks = try values.decode([PersistedTask].self, forKey: .tasks)
+        integrationEvidence = try values.decodeIfPresent(IntegrationEvidence.self, forKey: .integrationEvidence)
+        dismissedTurnIDs = try values.decodeIfPresent([String].self, forKey: .dismissedTurnIDs) ?? []
     }
 
     public static func make(
         settings: BellSettings,
         tasks: [TrackedTask],
         integrationEvidence: IntegrationEvidence? = nil,
-        savedAt: Date = Date()
+        savedAt: Date = Date(),
+        dismissedTurnIDs: Set<String> = []
     ) -> PersistedSnapshot {
         let recent = tasks
+            .filter { !dismissedTurnIDs.contains($0.turnID) }
             .sorted { $0.lastStateChangedAt > $1.lastStateChangedAt }
             .prefix(20)
             .map(PersistedTask.init(task:))
-        return PersistedSnapshot(savedAt: savedAt, settings: settings, tasks: Array(recent), integrationEvidence: integrationEvidence)
+        return PersistedSnapshot(savedAt: savedAt, settings: settings, tasks: Array(recent),
+                                 integrationEvidence: integrationEvidence, dismissedTurnIDs: dismissedTurnIDs.sorted())
     }
 }
 

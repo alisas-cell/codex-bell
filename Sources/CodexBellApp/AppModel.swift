@@ -54,7 +54,8 @@ final class AppModel: ObservableObject {
             restoring: (snapshot?.tasks ?? []).map(\.trackedTask),
             source: initialEvidence.sessionLogDetected == true
                 ? .codexSessions
-                : (initialEvidence.hooksInstalled ? .hooks : .legacyNotify)
+                : (initialEvidence.hooksInstalled ? .hooks : .legacyNotify),
+            dismissedTurnIDs: Set(snapshot?.dismissedTurnIDs ?? [])
         )
 
         liveBridge = LiveCodexBridge(
@@ -187,6 +188,13 @@ final class AppModel: ObservableObject {
         persist()
     }
 
+    func dismissActiveTask(turnID: String) {
+        guard reconciler.dismissActiveTask(turnID: turnID) else { return }
+        refreshPublishedTasks()
+        syncPowerAssertion()
+        persist()
+    }
+
     func configureCodex() {
         do {
             _ = try liveBridge.installAndVerify()
@@ -263,12 +271,17 @@ final class AppModel: ObservableObject {
         isPumping = true
         defer { isPumping = false }
         while let item = await queue.next() {
-            if AnnouncementPolicy.isSuperseded(item, by: reconciler.task(turnID: item.turnID)) {
+            if shouldSkipAnnouncement(item) {
                 await queue.markFinished()
                 continue
             }
             let currentLanguage = language
             await notifier.post(item, language: currentLanguage)
+            // The user may dismiss the row while notification delivery awaits.
+            if shouldSkipAnnouncement(item) {
+                await queue.markFinished()
+                continue
+            }
             await audio.announce(item, volume: item.volumeOverride ?? settings.volume, language: currentLanguage)
             await queue.markFinished()
             try? await Task.sleep(for: .seconds(1))
@@ -278,6 +291,11 @@ final class AppModel: ObservableObject {
     private func refreshPublishedTasks() {
         activeTasks = reconciler.activeTasks
         recentTasks = Array(reconciler.recentTasks.prefix(20))
+    }
+
+    private func shouldSkipAnnouncement(_ item: Announcement) -> Bool {
+        AnnouncementPolicy.isSuperseded(item, by: reconciler.task(turnID: item.turnID),
+                                        isDismissed: reconciler.dismissedTurnIDs.contains(item.turnID))
     }
 
     private func settingsChanged() {
@@ -298,7 +316,8 @@ final class AppModel: ObservableObject {
         let snapshot = PersistedSnapshot.make(
             settings: settings,
             tasks: reconciler.allTasks,
-            integrationEvidence: liveBridge?.evidence
+            integrationEvidence: liveBridge?.evidence,
+            dismissedTurnIDs: reconciler.dismissedTurnIDs
         )
         do {
             try FileManager.default.createDirectory(at: appSupportDirectory, withIntermediateDirectories: true)

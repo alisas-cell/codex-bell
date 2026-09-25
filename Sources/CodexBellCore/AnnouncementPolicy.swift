@@ -1,8 +1,10 @@
 import Foundation
 
 public enum AnnouncementPolicy {
-    public static func isSuperseded(_ announcement: Announcement, by task: TrackedTask?) -> Bool {
-        guard !announcement.isTest, let task, task.turnID == announcement.turnID else { return false }
+    public static func isSuperseded(_ announcement: Announcement, by task: TrackedTask?, isDismissed: Bool = false) -> Bool {
+        guard !announcement.isTest else { return false }
+        if isDismissed { return true }
+        guard let task, task.turnID == announcement.turnID else { return false }
         return task.eventGeneration > announcement.generation
     }
 
